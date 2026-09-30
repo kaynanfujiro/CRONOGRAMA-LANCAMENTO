@@ -1,0 +1,24 @@
+{
+  "name": "cronograma-lancamentos",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cronograma de lançamentos Cortag — web conectado ao ClickUp",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c red,blue \"npm run dev -w server\" \"npm run dev -w web\"",
+    "dev:demo": "concurrently -n api,web -c red,blue \"npm run dev:demo -w server\" \"npm run dev -w web\"",
+    "build": "npm run build -w web",
+    "start": "npm run start -w server",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w web",
+    "farol": "npm run farol -w server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,68 @@
+@import 'tailwindcss';
+
+/* Identidade Cortag — vermelho #C10230, branco #FFFFFF, cinza #50575D.
+   As cores das fases (status do ClickUp) e do farol ficam como estão. */
+:root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --sunk: #f3f4f5; /* cinza Cortag bem claro, para faixas e hover */
+  --ink: #50575d; /* texto */
+  --muted: #6b7277;
+  --line: #dfe2e4;
+  --accent: #c10230; /* títulos e destaques */
+  --accent-soft: #fbe8ec;
+  --good: #1f7a52;
+  --good-soft: #ddf1e7;
+  --warn: #9a6400;
+  --warn-soft: #fbefd5;
+  --bad: #b42318;
+  --bad-soft: #fbe2de;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-sunk: var(--sunk);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --font-display: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --font-sans: 'Barlow', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+
+/* letras principais em vermelho Cortag */
+@layer base {
+  h1,
+  h2,
+  h3 {
+    color: var(--accent);
+  }
+}
+
+/* Barras do Gantt */
+.barra-proj {
+  border: 1px solid var(--c);
+  background: repeating-linear-gradient(135deg, var(--c) 0 2px, transparent 2px 6px);
+  opacity: 0.75;
+}
+.grade-semanas {
+  background-image: linear-gradient(to right, var(--line) 1px, transparent 1px);
+  background-size: var(--wk) 100%;
+}
