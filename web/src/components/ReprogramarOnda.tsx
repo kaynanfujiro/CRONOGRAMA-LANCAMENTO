@@ -10,7 +10,7 @@ import { Botao, Rotulo } from './ui';
 const rotulo = (onda: string | null, ano: string | null) => (onda ? `${onda}${ano ? ' - ' + ano : ''}` : '—');
 const campo = 'rounded-md border border-line bg-surface px-2 py-1.5 text-sm';
 
-export function ReprogramarOnda({ p, aoMudar }: { p: Projeto; aoMudar: () => void }) {
+export function ReprogramarOnda({ p, aoMudar, editavel = true }: { p: Projeto; aoMudar: () => void; editavel?: boolean }) {
   const [hist, setHist] = useState<Reprogramacao[] | null>(null);
   const [opcoes, setOpcoes] = useState<OpcoesOnda | null>(null);
   const [aberto, setAberto] = useState(false);
@@ -68,14 +68,14 @@ export function ReprogramarOnda({ p, aoMudar }: { p: Projeto; aoMudar: () => voi
             ↻ reprogramada {p.reprogramacoes}x{p.ondaOriginal ? ` · original ${p.ondaOriginal}` : ''}
           </span>
         )}
-        {!aberto && (
+        {editavel && !aberto && (
           <span className="ml-auto">
             <Botao onClick={abrir}>Reprogramar onda</Botao>
           </span>
         )}
       </div>
 
-      {aberto && (
+      {editavel && aberto && (
         <div className="flex flex-col gap-2 rounded-md bg-sunk px-3 py-2.5">
           {etapa === 'form' ? (
             <>

@@ -8,7 +8,8 @@
     "typecheck": "tsc --noEmit -p .",
     "dev:demo": "tsx watch src/index.ts --demo",
     "farol": "tsx src/farol-job.ts",
-    "farol:demo": "tsx src/farol-job.ts --demo"
+    "farol:demo": "tsx src/farol-job.ts --demo",
+    "senha": "tsx src/definir-senha.ts"
   },
   "dependencies": {
     "express": "^4.21.2",

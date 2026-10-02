@@ -54,6 +54,21 @@ export interface CUCampo {
   type_config?: { options?: CUOpcao[] };
   value?: unknown;
 }
+/** Arquivo de um campo do tipo Anexo (ex.: "IMAGEM PRODUTO"). */
+export interface CUAnexo {
+  id: string;
+  date?: string;
+  title?: string;
+  extension?: string;
+  mimetype?: string;
+  url: string;
+  thumbnail_small?: string;
+  thumbnail_medium?: string;
+  thumbnail_large?: string;
+  width?: number | null;
+  height?: number | null;
+  deleted?: boolean;
+}
 export interface CUTarefa {
   id: string;
   name: string;

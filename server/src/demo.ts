@@ -68,6 +68,16 @@ function tarefa(id: string, nome: string, status: string, cor: string, farol?: n
         type_config: { options: FASES_ROTULO.map((label, orderindex) => ({ id: 'l' + orderindex, name: label, label, orderindex })) },
       },
       { id: 'pp', name: 'PRÓXIMO PASSO', type: 'text', value: farol === 2 ? 'Fechar fornecedor até a próxima terça' : null },
+      {
+        id: 'img',
+        name: 'IMAGEM PRODUTO',
+        type: 'attachment',
+        // o projeto do backlog fica sem imagem, para mostrar como aparece um card sem foto
+        value:
+          status === 'backlog'
+            ? null
+            : [{ id: `${id}.svg`, date: criado, title: `${id}.svg`, extension: 'svg', mimetype: 'image/svg+xml', url: `demo:${id}`, width: 400, height: 300 }],
+      },
     ],
   };
 }

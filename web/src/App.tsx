@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api, type Saude } from './lib/api';
+import { api, type Saude, type Sessao } from './lib/api';
 import { calcular } from './lib/calc';
 import { hoje as hojeUTC, fmt } from './lib/datas';
 import { useProjetos } from './hooks/useProjetos';
@@ -12,6 +12,8 @@ import { ProjetoDrawer } from './components/ProjetoDrawer';
 import { Parametros } from './pages/Parametros';
 import { Dashboards } from './pages/Dashboards';
 import { Botao } from './components/ui';
+import { AcessoEdicao } from './components/AcessoEdicao';
+import { ExportarPdf } from './components/ExportarPdf';
 import { FAROIS, nomeFarol } from './lib/farol';
 
 type Aba = 'cronograma' | 'dashboards' | 'parametros';
@@ -44,6 +46,25 @@ export default function App() {
     window.location.hash = a;
     setAba(a);
   };
+  // acesso: começa como leitura até o servidor responder
+  const [sessao, setSessao] = useState<Sessao>({ editor: false, protegido: true, senhaConfigurada: false });
+  const [sessaoLida, setSessaoLida] = useState(false);
+  const lerSessao = () =>
+    api
+      .sessao()
+      .then(setSessao)
+      .catch(() => undefined)
+      .finally(() => setSessaoLida(true));
+  useEffect(() => {
+    lerSessao();
+  }, []);
+  const editor = sessao.editor;
+  const abas = ABAS.filter((a) => editor || a.id !== 'parametros');
+  const abaVisivel: Aba = !editor && aba === 'parametros' ? 'cronograma' : aba;
+  // modo leitura em #parametros: volta o endereço para o cronograma (só depois de saber o acesso)
+  useEffect(() => {
+    if (sessaoLida && !editor && aba === 'parametros') irPara('cronograma');
+  }, [sessaoLida, editor, aba]); // eslint-disable-line react-hooks/exhaustive-deps
   const [saude, setSaude] = useState<Saude | null>(null);
   useEffect(() => {
     api.saude().then(setSaude).catch(() => setSaude({ ok: false, erros: ['O servidor Node (porta 3001) não respondeu. Ele está rodando?'], demo: false, arquivoEnv: '', testeClickUp: '' }));
@@ -97,7 +118,9 @@ export default function App() {
           <Botao onClick={atualizar} disabled={carregando}>
             {carregando ? 'Atualizando…' : 'Atualizar'}
           </Botao>
+          <ExportarPdf todas={todas} filtradas={linhas} hoje={hoje} />
           <Botao href={LINK_LISTA}>Abrir lista no ClickUp ↗</Botao>
+          <AcessoEdicao sessao={sessao} aoMudar={lerSessao} />
         </div>
       </header>
 
@@ -121,14 +144,14 @@ export default function App() {
 
       {/* menu */}
       <nav className="-mt-2 flex gap-1 border-b border-line" aria-label="Seções">
-        {ABAS.map((x) => (
+        {abas.map((x) => (
           <button
             key={x.id}
             type="button"
             onClick={() => irPara(x.id)}
-            aria-current={aba === x.id ? 'page' : undefined}
+            aria-current={abaVisivel === x.id ? 'page' : undefined}
             className={`-mb-px border-b-[3px] px-4 py-2.5 font-display text-[15px] font-bold uppercase tracking-wide transition ${
-              aba === x.id ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-ink'
+              abaVisivel === x.id ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-ink'
             }`}
           >
             {x.nome}
@@ -136,9 +159,9 @@ export default function App() {
         ))}
       </nav>
 
-      {aba !== 'parametros' && <Filtros f={f} set={setF} projetos={projetos} modelo={modelo.modelo} cronograma={aba === 'cronograma'} />}
+      {abaVisivel !== 'parametros' && <Filtros f={f} set={setF} projetos={projetos} modelo={modelo.modelo} cronograma={abaVisivel === 'cronograma'} />}
 
-      {aba === 'cronograma' && (
+      {abaVisivel === 'cronograma' && (
         <>
           <Funil linhas={linhas} modelo={modelo.modelo} aoClicar={(fase) => setF({ ...f, fase: f.fase === fase ? '' : fase })} />
           <Legenda modelo={modelo.modelo} />
@@ -150,7 +173,7 @@ export default function App() {
         </>
       )}
 
-      {aba === 'dashboards' && (
+      {abaVisivel === 'dashboards' && (
         <Dashboards
           linhas={linhas}
           modelo={modelo.modelo}
@@ -164,12 +187,12 @@ export default function App() {
         />
       )}
 
-      {aba === 'parametros' && (
+      {abaVisivel === 'parametros' && (
         <Parametros modelo={modelo.modelo} alterar={modelo.alterar} salvando={modelo.salvando} erro={modelo.erro} linhas={todas} />
       )}
 
       {selecionado && (
-        <ProjetoDrawer r={selecionado} modelo={modelo.modelo} hoje={hoje} aoFechar={() => setAberto(null)} aoMudar={atualizar} />
+        <ProjetoDrawer r={selecionado} modelo={modelo.modelo} hoje={hoje} aoFechar={() => setAberto(null)} aoMudar={atualizar} editavel={editor} />
       )}
     </div>
   );

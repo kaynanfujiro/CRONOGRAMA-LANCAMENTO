@@ -1,4 +1,4 @@
-import type { Modelo, OpcoesOnda, PedidoReprogramacao, Reprogramacao, RespostaProjetos, StatusLista } from '@shared/types';
+import type { Followup, Modelo, OpcoesOnda, PedidoReprogramacao, Reprogramacao, RespostaProjetos, StatusLista } from '@shared/types';
 import type { RelatorioFarol } from '@shared/farol-auto';
 
 async function req<T>(url: string, init?: RequestInit): Promise<T> {
@@ -8,10 +8,16 @@ async function req<T>(url: string, init?: RequestInit): Promise<T> {
   return corpo as T;
 }
 
+/** Acesso: editor = pode alterar; protegido = o servidor exige senha para alterar. */
+export interface Sessao { editor: boolean; protegido: boolean; senhaConfigurada: boolean }
+
 export interface Saude { ok: boolean; erros: string[]; demo: boolean; arquivoEnv: string; testeClickUp: string }
 
 export const api = {
   saude: () => req<Saude>('/api/saude'),
+  sessao: () => req<Sessao>('/api/sessao'),
+  entrar: (senha: string) => req<{ editor: boolean }>('/api/sessao', { method: 'POST', body: JSON.stringify({ senha }) }),
+  sair: () => req<{ editor: boolean }>('/api/sessao', { method: 'DELETE' }),
   projetos: (atualizar = false) => req<RespostaProjetos>(`/api/projetos${atualizar ? '?atualizar=1' : ''}`),
   status: () => req<StatusLista[]>('/api/status'),
   modelo: () => req<Modelo>('/api/modelo'),
@@ -20,6 +26,9 @@ export const api = {
   reprogramar: (id: string, p: PedidoReprogramacao) =>
     req<{ de: string; para: string; vezes: number }>(`/api/projetos/${id}/onda`, { method: 'POST', body: JSON.stringify(p) }),
   reprogramacoes: (id: string) => req<Reprogramacao[]>(`/api/projetos/${id}/reprogramacoes`),
+  followups: (id: string) => req<Followup[]>(`/api/projetos/${id}/followups`),
+  registrarFollowup: (id: string, comentario: string) =>
+    req<{ comentario: string }>(`/api/projetos/${id}/followup`, { method: 'POST', body: JSON.stringify({ comentario }) }),
   farol: () => req<RelatorioFarol | null>('/api/farol'),
   sincronizarFarol: (simular: boolean) =>
     req<RelatorioFarol & { aviso?: string }>(`/api/farol/sincronizar${simular ? '?simular=1' : ''}`, { method: 'POST' }),

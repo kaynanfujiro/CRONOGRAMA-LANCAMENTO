@@ -66,3 +66,36 @@ body {
   background-image: linear-gradient(to right, var(--line) 1px, transparent 1px);
   background-size: var(--wk) 100%;
 }
+
+/* Relatório em PDF (Exportar PDF): invisível na tela; na impressão, só ele aparece, em A4 deitado */
+.relatorio-pdf {
+  display: none;
+}
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 9mm 9mm 12mm;
+    @bottom-right {
+      content: 'pág. ' counter(page) ' de ' counter(pages);
+      font-size: 8pt;
+      color: #6b7277;
+    }
+  }
+  body > #root {
+    display: none !important;
+  }
+  .relatorio-pdf {
+    display: block;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .linha-pdf,
+  .grupo-onda {
+    break-inside: avoid;
+  }
+  .grupo-onda {
+    break-after: avoid;
+  }
+}

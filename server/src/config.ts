@@ -31,6 +31,17 @@ function carregarEnv(): string | null {
 }
 export const arquivoEnv = carregarEnv();
 
+/** Arquivo com o resumo da senha de edição (server/src/acesso.json). */
+export const arquivoAcesso = path.join(RAIZ, 'server/src/acesso.json');
+function lerSenhaHash(): string {
+  try {
+    const j = JSON.parse(readFileSync(arquivoAcesso, 'utf8')) as { senhaEdicao?: string };
+    return typeof j.senhaEdicao === 'string' ? j.senhaEdicao : '';
+  } catch {
+    return '';
+  }
+}
+
 export const config = {
   token: (process.env.CLICKUP_TOKEN ?? '').trim(),
   listId: process.env.CLICKUP_LIST_ID ?? '901329151000',
@@ -40,6 +51,16 @@ export const config = {
   farolMinutos: Number(process.env.FAROL_MINUTOS ?? 30),
   /** Com --demo (ou DEMO=1), usa dados de exemplo em vez do ClickUp (útil para testar a tela sem token). */
   demo: process.env.DEMO === '1' || process.argv.includes('--demo'),
+  /** Senha que libera as alterações (mover fase, reprogramar, follow-up, Parâmetros). Sem ela, o web é só leitura em produção. */
+  senhaEdicao: (process.env.SENHA_EDICAO ?? '').trim(),
+  /**
+   * Senha de edição "embutida" no projeto (gerada com `npm run senha`): só o resumo criptográfico (scrypt),
+   * nunca a senha em texto. Vai junto no build/zip/Docker, então o servidor já sobe com a senha certa.
+   * Se SENHA_EDICAO também existir, a variável vale.
+   */
+  senhaHash: lerSenhaHash(),
+  /** `npm start` / Docker (NODE_ENV=production). */
+  producao: process.env.NODE_ENV === 'production',
   arquivoModelo: path.join(RAIZ, 'server/data/modelo.json'),
   pastaWeb: path.join(RAIZ, 'web/dist'),
 };

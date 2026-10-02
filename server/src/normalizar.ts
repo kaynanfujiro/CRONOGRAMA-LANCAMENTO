@@ -8,9 +8,9 @@
  *   (o projeto já estava nessa fase antes de existir no ClickUp), exceto a 1ª fase;
  * - fases anteriores à primeira registrada contam como concluídas, sem data.
  */
-import type { Farol, FaseReal, Modelo, Projeto, Situacao } from '../../shared/types';
+import type { Farol, FaseReal, ImagemProduto, Modelo, Projeto, Situacao } from '../../shared/types';
 import { faseDoStatus, normalizar } from '../../shared/modelo-padrao';
-import type { CUCampo, CUTarefa, CUTempoStatus } from './clickup';
+import type { CUAnexo, CUCampo, CUTarefa, CUTempoStatus } from './clickup';
 
 /** Minutos abaixo dos quais uma passagem por um status é tratada como correção e ignorada. */
 const MIN_CORRECAO = 60;
@@ -37,6 +37,8 @@ export const CAMPOS = {
   dispensadas: ['FASES DISPENSADAS', 'FASE DISPENSADA', 'FASES NÃO APLICÁVEIS', 'FASES QUE NÃO SE APLICAM'],
   /** Responsável pelo projeto (em teste: "Solicitante do Teste"); vazio → responsáveis do card. */
   responsavel: ['Solicitante do Teste', 'RESPONSÁVEL'],
+  /** Foto do produto (campo do tipo Anexo). */
+  imagem: ['IMAGEM PRODUTO', 'IMAGEM DO PRODUTO', 'FOTO PRODUTO', 'FOTO DO PRODUTO'],
 };
 
 export function campo(t: CUTarefa, nomes: string[]): CUCampo | undefined {
@@ -125,6 +127,46 @@ function responsaveis(t: CUTarefa): string[] {
   const doCampo = valorTexto(campo(t, CAMPOS.responsavel));
   if (doCampo) return [doCampo];
   return t.assignees.map((a) => a.username || a.email || '').filter(Boolean);
+}
+
+/** Imagem do campo "IMAGEM PRODUTO", com os endereços originais do ClickUp (uso só no servidor). */
+export interface AnexoImagem {
+  /** id do anexo no ClickUp (muda quando a imagem é trocada). */
+  id: string;
+  url: string;
+  miniatura: string;
+  titulo: string | null;
+  largura: number | null;
+  altura: number | null;
+}
+
+const EXT_IMAGEM = /^(png|jpe?g|gif|webp|bmp|svg|avif)$/i;
+
+/** Lê o campo "IMAGEM PRODUTO". Com mais de uma imagem no campo, vale a anexada por último. */
+export function anexoImagem(t: CUTarefa): AnexoImagem | null {
+  const f = campo(t, CAMPOS.imagem);
+  if (!f || !Array.isArray(f.value)) return null;
+  const imagens = (f.value as CUAnexo[]).filter(
+    (a) => a && a.url && !a.deleted && ((a.mimetype ?? '').startsWith('image/') || EXT_IMAGEM.test(a.extension ?? '')),
+  );
+  if (!imagens.length) return null;
+  const a = imagens.reduce((x, y) => (Number(y.date ?? 0) > Number(x.date ?? 0) ? y : x));
+  return {
+    id: String(a.id),
+    url: a.url,
+    miniatura: a.thumbnail_medium || a.thumbnail_large || a.url,
+    titulo: a.title ?? null,
+    largura: a.width ?? null,
+    altura: a.height ?? null,
+  };
+}
+
+/** Endereços da imagem pelo nosso servidor; `v` muda quando a imagem é trocada no card (o navegador não usa a antiga). */
+function imagemDoProjeto(t: CUTarefa): ImagemProduto | null {
+  const a = anexoImagem(t);
+  if (!a) return null;
+  const base = `/api/projetos/${encodeURIComponent(t.id)}/imagem?v=${encodeURIComponent(a.id)}`;
+  return { url: base, miniatura: `${base}&tam=p`, titulo: a.titulo, largura: a.largura, altura: a.altura };
 }
 
 /** Converte milissegundos em data ISO do dia (fuso de Brasília). */
@@ -218,6 +260,7 @@ export function paraProjeto(t: CUTarefa, tempo: CUTempoStatus | undefined, model
     nome: t.name,
     url: t.url,
     pvl: valorTexto(campo(t, CAMPOS.pvl)),
+    imagem: imagemDoProjeto(t),
     familia: valorTexto(campo(t, CAMPOS.familia)),
     analistas: responsaveis(t),
     itens: valorNumero(campo(t, CAMPOS.itens)),

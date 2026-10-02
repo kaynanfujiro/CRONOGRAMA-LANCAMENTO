@@ -4,8 +4,10 @@ import { DIA, MESES, dias, fmt, segunda, semanaISO } from '../lib/datas';
 import { Chip, Pill } from './ui';
 import { FarolBadge } from './Farol';
 import { faixaFarol, tomFarol } from '../lib/farol';
+import { ImagemProduto } from './ImagemProduto';
 
-const LARGURA_ROTULO = 290;
+/** Coluna fixa da esquerda: miniatura do produto (64 px) + textos do projeto. */
+const LARGURA_ROTULO = 366;
 
 /** Posição vertical das barras: planejado (fino) em cima, real/projeção embaixo; fases paralelas dividem a raia. */
 function geo(tipo: 'plan' | 'real', f: FaseCalc) {
@@ -116,43 +118,47 @@ export function Gantt({
             <button
               type="button"
               onClick={() => aoAbrir(r.p.id)}
-              className="sticky left-0 z-[5] flex flex-none flex-col justify-center gap-[3px] border-r border-line bg-surface py-2 pl-4 pr-3 text-left group-hover:bg-sunk focus-visible:outline-2 focus-visible:outline-accent"
+              className="sticky left-0 z-[5] flex flex-none items-center gap-3 border-r border-line bg-surface py-2 pl-4 pr-3 text-left group-hover:bg-sunk focus-visible:outline-2 focus-visible:outline-accent"
               style={{ width: LARGURA_ROTULO }}
             >
               {/* faixa do farol */}
               <i className={`absolute inset-y-0 left-0 w-1.5 ${faixaFarol[tomFarol(r.p.farol)]}`} aria-hidden />
-              <span className="text-[13px] font-semibold leading-tight">{r.p.nome}</span>
-              <span className="flex flex-wrap items-center gap-1.5">
-                <FarolBadge farol={r.p.farol} />
-                <span title="Desvio calculado na conclusão (planejado × projeção)">
-                  <Pill saude={r.saude}>{r.saudeTxt}</Pill>
-                </span>
-              </span>
-              <span className="text-[11.5px] text-muted">
-                {r.p.analistas.join(', ') || 'Sem responsável'} · {r.p.onda ?? '—'}
-                {r.p.reprogramacoes > 0 && (
-                  <span className="ml-1 font-semibold text-warn" title={`Onda reprogramada ${r.p.reprogramacoes}x${r.p.ondaOriginal ? ` — original: ${r.p.ondaOriginal}` : ''}`}>
-                    ↻{r.p.reprogramacoes}
+              {/* foto do produto (campo IMAGEM PRODUTO) para reconhecer o item de relance */}
+              <ImagemProduto p={r.p} className="h-16 w-16" />
+              <span className="flex min-w-0 flex-1 flex-col justify-center gap-[3px]">
+                <span className="text-[13px] font-semibold leading-tight">{r.p.nome}</span>
+                <span className="flex flex-wrap items-center gap-1.5">
+                  <FarolBadge farol={r.p.farol} />
+                  <span title="Desvio calculado na conclusão (planejado × projeção)">
+                    <Pill saude={r.saude}>{r.saudeTxt}</Pill>
                   </span>
-                )}{' '}
-                · <span title={r.tipoAssumido ? 'Tipo padrão — card sem Tipo de Projeto no ClickUp' : 'Tipo de projeto'} className={r.tipoAssumido ? 'italic' : ''}>{r.tipo.nome.replace('Ampliação de ', 'Ampl. ')}</span>
-              </span>
-              <span className="flex flex-wrap gap-1.5 text-[11.5px] text-muted">
-                {r.atuais.length ? r.atuais.map((i) => <Chip key={i} cor={r.fases[i].cor}>{r.fases[i].nome}</Chip>) : <em>Aguardando início</em>}
-              </span>
-              {!r.cancelado && !r.concluido && r.esperadas.length > 0 && (
-                <span className="text-[11px] italic text-muted">Plano p/ hoje: {r.esperadas.map((i) => r.fases[i].nome).join(' + ')}</span>
-              )}
-              {r.dispensadas.length > 0 && (
-                <span className="text-[11px] text-muted" title="Campo “FASES DISPENSADAS” no ClickUp — essas fases não entram no cronograma deste projeto">
-                  Não se aplica: <s>{r.dispensadas.map((i) => r.fases[i].nome).join(', ')}</s>
                 </span>
-              )}
-              {r.p.puladas?.length > 0 && (
-                <span className="text-[11px] text-warn" title="O card mudou de status pulando estas fases. Se foi combinado, marque-as em “FASES DISPENSADAS” no ClickUp.">
-                  ⚠ Pulou: {r.p.puladas.map((i) => r.fases[i].nome).join(', ')}
+                <span className="text-[11.5px] text-muted">
+                  {r.p.analistas.join(', ') || 'Sem responsável'} · {r.p.onda ?? '—'}
+                  {r.p.reprogramacoes > 0 && (
+                    <span className="ml-1 font-semibold text-warn" title={`Onda reprogramada ${r.p.reprogramacoes}x${r.p.ondaOriginal ? ` — original: ${r.p.ondaOriginal}` : ''}`}>
+                      ↻{r.p.reprogramacoes}
+                    </span>
+                  )}{' '}
+                  · <span title={r.tipoAssumido ? 'Tipo padrão — card sem Tipo de Projeto no ClickUp' : 'Tipo de projeto'} className={r.tipoAssumido ? 'italic' : ''}>{r.tipo.nome.replace('Ampliação de ', 'Ampl. ')}</span>
                 </span>
-              )}
+                <span className="flex flex-wrap gap-1.5 text-[11.5px] text-muted">
+                  {r.atuais.length ? r.atuais.map((i) => <Chip key={i} cor={r.fases[i].cor}>{r.fases[i].nome}</Chip>) : <em>Aguardando início</em>}
+                </span>
+                {!r.cancelado && !r.concluido && r.esperadas.length > 0 && (
+                  <span className="text-[11px] italic text-muted">Plano p/ hoje: {r.esperadas.map((i) => r.fases[i].nome).join(' + ')}</span>
+                )}
+                {r.dispensadas.length > 0 && (
+                  <span className="text-[11px] text-muted" title="Campo “FASES DISPENSADAS” no ClickUp — essas fases não entram no cronograma deste projeto">
+                    Não se aplica: <s>{r.dispensadas.map((i) => r.fases[i].nome).join(', ')}</s>
+                  </span>
+                )}
+                {r.p.puladas?.length > 0 && (
+                  <span className="text-[11px] text-warn" title="O card mudou de status pulando estas fases. Se foi combinado, marque-as em “FASES DISPENSADAS” no ClickUp.">
+                    ⚠ Pulou: {r.p.puladas.map((i) => r.fases[i].nome).join(', ')}
+                  </span>
+                )}
+              </span>
             </button>
             <div className="grade-semanas relative flex-none group-hover:bg-sunk" style={{ width: W }}>
               <span className="absolute left-1 top-[5px] font-mono text-[9px] text-muted">P</span>

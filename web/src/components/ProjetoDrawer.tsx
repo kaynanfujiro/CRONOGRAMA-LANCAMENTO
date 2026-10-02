@@ -5,6 +5,8 @@ import { deISO, dias, fmt } from '../lib/datas';
 import { api } from '../lib/api';
 import { Botao, Chip, Pill, Rotulo } from './ui';
 import { FarolBadge } from './Farol';
+import { FollowupComentario } from './FollowupComentario';
+import { ImagemProduto } from './ImagemProduto';
 import { ReprogramarOnda } from './ReprogramarOnda';
 import { divergencia } from '../lib/farol';
 import { calcularFarol } from '@shared/farol-auto';
@@ -16,12 +18,15 @@ export function ProjetoDrawer({
   hoje,
   aoFechar,
   aoMudar,
+  editavel = true,
 }: {
   r: ProjetoCalc;
   modelo: Modelo;
   hoje: number;
   aoFechar: () => void;
   aoMudar: () => void;
+  /** false = modo leitura (sem mover fase, reprogramar ou comentar) */
+  editavel?: boolean;
 }) {
   const p = r.p;
   const [statusLista, setStatusLista] = useState<StatusLista[]>([]);
@@ -31,8 +36,8 @@ export function ProjetoDrawer({
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    api.status().then(setStatusLista).catch(() => setStatusLista([]));
-  }, []);
+    if (editavel) api.status().then(setStatusLista).catch(() => setStatusLista([]));
+  }, [editavel]);
   useEffect(() => {
     const esc = (e: KeyboardEvent) => e.key === 'Escape' && aoFechar();
     document.addEventListener('keydown', esc);
@@ -81,19 +86,35 @@ export function ProjetoDrawer({
       <div className="fixed inset-0 z-20 bg-black/35" onClick={aoFechar} />
       <aside className="fixed inset-y-0 right-0 z-30 flex w-full max-w-[760px] flex-col gap-4 overflow-y-auto [&>*]:shrink-0 bg-surface p-5 shadow-2xl" aria-label="Detalhe do projeto">
         <header className="flex items-start justify-between gap-3">
-          <div className="flex flex-col gap-1">
-            <Rotulo>
-              {p.pvl ?? '—'} · {p.familia ?? '—'}
-            </Rotulo>
-            <h2 className="font-display text-2xl font-bold">{p.nome}</h2>
-            <span className="flex flex-wrap items-center gap-2">
-              <FarolBadge farol={p.farol} grande />
-              <span className="text-xs text-muted">desvio calculado</span>
-              <Pill saude={r.saude}>{r.saudeTxt}</Pill>
-              <a className="text-[12.5px] font-semibold text-accent hover:underline" href={p.url} target="_blank" rel="noopener noreferrer">
-                Abrir no ClickUp ↗
+          <div className="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:items-center">
+            {/* foto do produto (campo IMAGEM PRODUTO); o clique abre em tamanho real */}
+            {p.imagem ? (
+              <a
+                href={p.imagem.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Abrir imagem em tamanho real"
+                className="block w-full flex-none cursor-zoom-in rounded-md transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-accent sm:w-auto"
+              >
+                <ImagemProduto p={p} grande className="h-44 w-full sm:h-[180px] sm:w-[240px]" />
               </a>
-            </span>
+            ) : (
+              <ImagemProduto p={p} grande className="h-24 w-full sm:h-[180px] sm:w-[240px]" />
+            )}
+            <div className="flex min-w-0 flex-col gap-1">
+              <Rotulo>
+                {p.pvl ?? '—'} · {p.familia ?? '—'}
+              </Rotulo>
+              <h2 className="font-display text-2xl font-bold">{p.nome}</h2>
+              <span className="flex flex-wrap items-center gap-2">
+                <FarolBadge farol={p.farol} grande />
+                <span className="text-xs text-muted">desvio calculado</span>
+                <Pill saude={r.saude}>{r.saudeTxt}</Pill>
+                <a className="text-[12.5px] font-semibold text-accent hover:underline" href={p.url} target="_blank" rel="noopener noreferrer">
+                  Abrir no ClickUp ↗
+                </a>
+              </span>
+            </div>
           </div>
           <Botao onClick={aoFechar}>Fechar</Botao>
         </header>
@@ -124,7 +145,7 @@ export function ProjetoDrawer({
         </div>
 
         {/* onda de lançamento + reprogramação com evidência no card */}
-        {!r.cancelado && <ReprogramarOnda p={p} aoMudar={aoMudar} />}
+        {!r.cancelado && <ReprogramarOnda p={p} aoMudar={aoMudar} editavel={editavel} />}
 
         {/* tempo na fase atual × prazo */}
         {cur && cur.estado === 'atual' && (
@@ -147,7 +168,7 @@ export function ProjetoDrawer({
         )}
 
         {/* mover fase no ClickUp */}
-        {!r.cancelado && statusLista.length > 0 && (
+        {editavel && !r.cancelado && statusLista.length > 0 && (
           <div className="flex flex-col gap-2 rounded-lg bg-accent-soft px-3 py-2.5">
             <Rotulo>Mover fase no ClickUp</Rotulo>
             <div className="flex flex-wrap items-center gap-2">
@@ -184,6 +205,9 @@ export function ProjetoDrawer({
             {msg && <small className="text-xs text-muted">{msg}</small>}
           </div>
         )}
+
+        {/* follow-up com a pessoa: comentário no card (♦️DATA / ♦️Comentário), sem mexer nos campos */}
+        <FollowupComentario key={p.id} p={p} editavel={editavel} />
 
         <dl className="m-0 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
           {campos.map(([k, v, destaque]) => (

@@ -23,11 +23,29 @@ export interface Farol {
 
 export type Situacao = 'Backlog' | 'Andamento' | 'Concluído' | 'Cancelado';
 
+/**
+ * Imagem do produto (campo de anexo "IMAGEM PRODUTO" no ClickUp).
+ * Os endereços são do nosso servidor (/api/projetos/:id/imagem): o navegador não fala com o ClickUp.
+ */
+export interface ImagemProduto {
+  /** Imagem original (topo do detalhe do projeto). */
+  url: string;
+  /** Versão reduzida do ClickUp (coluna do cronograma). */
+  miniatura: string;
+  /** Nome do arquivo no ClickUp. */
+  titulo: string | null;
+  /** Tamanho original em pixels (para não ampliar demais imagens pequenas). */
+  largura: number | null;
+  altura: number | null;
+}
+
 export interface Projeto {
   id: string; // id da tarefa no ClickUp
   nome: string;
   url: string;
   pvl: string | null;
+  /** Foto do produto (null = campo "IMAGEM PRODUTO" vazio). */
+  imagem: ImagemProduto | null;
   familia: string | null;
   analistas: string[];
   itens: number | null;
@@ -160,6 +178,16 @@ export interface PedidoReprogramacao {
   ano: string;
   categoria: string;
   motivo: string;
+}
+
+/** Um follow-up registrado como comentário no card ("♦️DATA:" / "♦️Comentário:"). */
+export interface Followup {
+  /** Data escrita no comentário (dd/mm/aaaa). */
+  data: string;
+  comentario: string;
+  por: string | null;
+  /** Data e hora em que o comentário foi criado no ClickUp (ISO). */
+  em: string | null;
 }
 
 /** Uma reprogramação lida dos comentários do card. */

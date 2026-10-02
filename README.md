@@ -96,7 +96,7 @@ Opções de hospedagem: um servidor interno da empresa com Node, ou serviços co
 - **Desvio** = conclusão projetada − conclusão planejada.
 
 **Campos personalizados lidos** (arquivo `server/src/normalizar.ts`, constante `CAMPOS`):
-`CÓDIGO PVL`, `FAMÍLIA`, `QUANTIDADE SUBITENS`, `ONDA - LANÇAMENTO`, `ANO LANÇAMENTO`, `DATA LANÇAMENTO META`, `DATA INÍCIO REAL`, `DATA CONCLUSÃO REAL`, `Forecast Inícial`.
+`CÓDIGO PVL`, `FAMÍLIA`, `QUANTIDADE SUBITENS`, `ONDA - LANÇAMENTO`, `ANO LANÇAMENTO`, `DATA LANÇAMENTO META`, `DATA INÍCIO REAL`, `DATA CONCLUSÃO REAL`, `Forecast Inícial`, `IMAGEM PRODUTO` (tipo Anexo).
 Se você renomear um campo no ClickUp, ajuste o nome ali.
 
 **Status → fase** (arquivo `shared/modelo-padrao.ts`, propriedade `status` de cada fase). Se criar ou renomear um status no ClickUp, adicione o nome na fase correspondente. Status especiais: `backlog` (não iniciado) e `cancelado`.
@@ -159,6 +159,10 @@ cronograma-lancamentos/
 | GET | `/api/status` | Status da lista no ClickUp |
 | GET / PUT | `/api/modelo` | Lê / salva o modelo de lead time |
 | PATCH | `/api/projetos/:id/status` | Muda a fase do card no ClickUp (`{ "status": "marketing" }`) |
+| GET | `/api/projetos/:id/imagem` | Foto do produto (campo IMAGEM PRODUTO; `?tam=p` = miniatura) |
+| GET | `/api/projetos/:id/followups` | Follow-ups já registrados (lidos dos comentários do card) |
+| POST | `/api/projetos/:id/followup` | Registra um follow-up como comentário no card (`{ "comentario": "..." }`) |
+| GET / POST / DELETE | `/api/sessao` | Acesso: consulta, entra com a senha de edição (`{ "senha": "..." }`), sai |
 
 ## Problemas comuns
 
@@ -220,5 +224,57 @@ No detalhe do projeto, **Reprogramar onda** muda a onda/ano no ClickUp e deixa a
 - Campos opcionais na lista (crie para ganhar o selo ↻ no cronograma e a tabela em Dashboards):
   **ONDA ORIGINAL** (texto curto — preenchido só na 1ª reprogramação) e **REPROGRAMAÇÕES** (número — soma 1 a cada vez).
 - O histórico no web é lido dos comentários do card (mudar a onda direto no ClickUp não gera histórico).
+
+## Imagem do produto
+
+A foto de cada produto vem do campo **IMAGEM PRODUTO** (tipo *Anexo*) do card no ClickUp:
+
+- aparece em miniatura na coluna da esquerda do **Cronograma** e no topo do **detalhe do projeto** (clique na foto para abrir em tamanho real);
+- o servidor baixa a imagem do ClickUp e guarda em memória; o navegador só fala com o nosso servidor (rota `/api/projetos/:id/imagem`);
+- com mais de uma imagem no campo, vale a anexada por último. Para trocar a foto, anexe a nova (e apague a antiga, se quiser);
+- card sem imagem mostra um ícone cinza no lugar.
+
+## Comentários de follow-up
+
+No detalhe do projeto, abaixo de **Mover fase no ClickUp**, o botão **Acrescentar comentário** abre um campo para registrar o que foi combinado no follow-up com a pessoa. Depois de revisar, o web cria este comentário no card:
+
+```
+♦️DATA: 02/10/2026
+♦️Comentário: texto digitado no follow-up
+```
+
+- A data é sempre a do dia do envio. Nenhum campo do card é alterado.
+- Os follow-ups anteriores aparecem logo abaixo (os 3 mais recentes; "Ver todos" mostra o resto), lidos dos comentários do card que seguem esse padrão.
+- Se o painel for fechado sem querer, o texto digitado continua lá ao reabrir o projeto (enquanto a página estiver aberta).
+
+## Acesso: visualização × edição (senha)
+
+Quem abre o web **só visualiza**: abas **Cronograma** e **Dashboards**, detalhe do projeto com imagem, datas, fases e históricos.
+Para alterar, clique em **Entrar para editar** (no topo) e digite a senha de edição. Aí aparecem a aba **Parâmetros**, **Mover fase**, **Reprogramar onda** e **Acrescentar comentário**. O navegador lembra a senha por 30 dias; **Sair da edição** volta ao modo leitura.
+
+**Definir a senha (uma vez, no seu PC):**
+
+```bash
+npm run senha
+```
+
+Digite a senha duas vezes (mínimo 6 caracteres). Ela fica embutida no projeto em `server/src/acesso.json`, **só como resumo criptográfico** (scrypt): quem abrir o arquivo não descobre a senha. Depois é só gerar o build/pacote normalmente — o servidor da empresa já sobe com a senha certa, sem o TI cadastrar nada. Para trocar, rode `npm run senha` de novo e gere o pacote de novo.
+
+| Situação | O que acontece |
+|---|---|
+| `npm run dev` sem senha definida | tudo liberado, como antes |
+| Com senha definida (dev ou servidor) | só leitura; a senha libera a edição |
+| Servidor (`npm start` / Docker) sem senha definida | **só leitura para todos** |
+
+- Opcional: a variável de ambiente `SENHA_EDICAO`, se existir, vale no lugar da senha embutida.
+- O bloqueio é feito no servidor: toda chamada que altera algo (`POST`, `PUT`, `PATCH`, `DELETE` em `/api`) é recusada sem a senha, mesmo que alguém tente chamar a API direto.
+- Trocar a senha derruba na hora todos os acessos de edição abertos.
+- Após 5 senhas erradas em 1 minuto, o servidor pede para aguardar.
+- O farol automático continua rodando no servidor, independente de quem está logado.
+
+## Exportar PDF (por Onda)
+
+Botão **Exportar PDF** no topo (também no modo leitura): escolha as ondas (as 2 mais próximas vêm marcadas), opcionalmente aplique os filtros da tela e clique em **Gerar PDF** → na janela de impressão, destino **Salvar como PDF** (A4 deitado).
+O relatório traz números gerais, um bloco por onda (da mais próxima para a mais distante) e, por projeto: foto, PVL, **status proposto** (fase prevista para hoje pelo plano), **status real** (fase atual no ClickUp), **dias na etapa** (× prazo), **status da etapa**, farol e desvio.
 #   C R O N O G R A M A - L A N C A M E N T O  
  
